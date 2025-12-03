@@ -3,7 +3,7 @@ Configuración del admin de Django para usuarios
 """
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Usuario
+from .models import Usuario, DispositivoNotificacion
 
 
 @admin.register(Usuario)
@@ -26,3 +26,11 @@ class UsuarioAdmin(UserAdmin):
             'fields': ('rol', 'telefono', 'whatsapp', 'activo')
         }),
     )
+
+
+@admin.register(DispositivoNotificacion)
+class DispositivoNotificacionAdmin(admin.ModelAdmin):
+    list_display = ("usuario", "plataforma", "token", "fecha_registro", "activo")
+    list_filter = ("plataforma", "activo")
+    search_fields = ("usuario__username", "usuario__first_name", "usuario__last_name", "token")
+
