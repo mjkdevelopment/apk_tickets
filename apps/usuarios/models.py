@@ -3,6 +3,7 @@ Modelos para el sistema de usuarios
 """
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.conf import settings
 
 
 class Usuario(AbstractUser):
@@ -87,3 +88,41 @@ class Usuario(AbstractUser):
     def puede_trabajar_tickets(self):
         """Verifica si el usuario puede trabajar en tickets"""
         return self.rol in ['ADMIN', 'TECNICO']
+
+
+class DispositivoNotificacion(models.Model):
+    """
+    Dispositivo (móvil / tablet) que recibe notificaciones push vía FCM
+    """
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='dispositivos_notificacion',
+        verbose_name='Usuario',
+    )
+    fcm_token = models.CharField(
+        max_length=255,
+        unique=True,
+        verbose_name='Token FCM',
+        help_text='Token de Firebase Cloud Messaging para este dispositivo.',
+    )
+    activo = models.BooleanField(
+        default=True,
+        verbose_name='Activo',
+    )
+    fecha_registro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Fecha de registro',
+    )
+    fecha_ultimo_uso = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Último uso',
+    )
+
+    class Meta:
+        verbose_name = 'Dispositivo de notificación'
+        verbose_name_plural = 'Dispositivos de notificación'
+        ordering = ['-fecha_ultimo_uso']
+
+    def __str__(self):
+        return f"{self.usuario} - {self.fcm_token[:12]}..."
