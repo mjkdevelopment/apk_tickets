@@ -143,9 +143,18 @@ TWILIO_WHATSAPP_FROM = config('TWILIO_WHATSAPP_FROM', default='')
 WHATSAPP_ENABLED = config('WHATSAPP_ENABLED', default=False, cast=bool)
 BASE_URL = config('BASE_URL', default='http://localhost:8000')
 
+FIREBASE_CREDENTIALS_FILE = config(
+    'FIREBASE_CREDENTIALS_FILE',
+    default=None,
+)
+
+
 # Configuración de archivos subidos
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
 
 # 🔐 Sesiones basadas en cookies firmadas (para evitar usar la tabla django_session)
 SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+
+FCM_SERVER_KEY = config('FCM_SERVER_KEY', default='')
+

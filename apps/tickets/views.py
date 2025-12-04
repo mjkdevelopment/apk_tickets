@@ -3,9 +3,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponseForbidden
+
 from .utils import enviar_whatsapp_ticket_asignado
 from apps.tickets.models import Ticket, ComentarioTicket
 from apps.tickets.forms import TicketForm, ComentarioTicketForm, TicketEstadoForm
+from .fcm import enviar_notificacion_nuevo_ticket
 
 
 @login_required
@@ -90,7 +92,21 @@ def ticket_crear(request):
             # ==========================
 
             ticket.save()
+            form.save_m2m()  # por si el form tiene ManyToMany
+
+            # 👉 WhatsApp al técnico asignado (como ya tenías)
             enviar_whatsapp_ticket_asignado(ticket)
+
+            # 👉 NUEVO: notificación push al técnico asignado (FCM)
+            try:
+                enviar_notificacion_nuevo_ticket(ticket)
+            except Exception:
+                import logging
+                logging.getLogger(__name__).exception(
+                    "Error enviando notificación FCM para el ticket %s",
+                    ticket.id,
+                )
+
             messages.success(request, f'Ticket {ticket.numero_ticket} creado correctamente.')
             return redirect('ticket_detalle', pk=ticket.pk)
     else:
@@ -237,8 +253,6 @@ def ticket_tomar(request, pk):
         return redirect('ticket_detalle', pk=ticket.pk)
 
     return redirect('ticket_detalle', pk=ticket.pk)
-
-
 
 
 @login_required
