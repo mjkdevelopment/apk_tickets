@@ -14,39 +14,60 @@ from .fcm import enviar_notificacion_nuevo_ticket
 def tickets_lista(request):
     """
     Lista de tickets filtrada por rol y por estado.
-    - ADMIN: ve todos
-    - DIGITADOR: solo los que creó
-    - TECNICO: ve los que tiene asignados + los sin asignar de SUS categorías
+
+    - ADMIN:
+        puede ver abiertos / cerrados / todos (filtro ?ver=...)
+    - DIGITADOR:
+        igual que admin pero solo de los que él creó
+    - TÉCNICO:
+        SOLO ve tickets ABIERTOS:
+          * los que tiene asignados
+          * + los sin asignar de sus categorías de especialidad
     """
     usuario = request.user
-    tickets = Ticket.objects.select_related('local', 'categoria', 'creado_por', 'asignado_a')
+    ver = request.GET.get('ver', 'abiertos')
 
-    # Filtro por rol
+    tickets = Ticket.objects.select_related(
+        'local', 'categoria', 'creado_por', 'asignado_a'
+    )
+
+    # --- Filtro por rol ---
     if usuario.es_digitador():
         tickets = tickets.filter(creado_por=usuario)
+
     elif usuario.es_tecnico():
         cats = usuario.especialidades.all()
+
         if cats.exists():
             tickets = tickets.filter(
                 Q(asignado_a=usuario) |
                 Q(asignado_a__isnull=True, categoria__in=cats)
             )
         else:
-            # Si el técnico no tiene especialidades configuradas, por ahora ve todo lo sin asignar
+            # Técnico sin especialidades configuradas => ve solo
+            # tickets abiertos asignados a él o sin asignar
             tickets = tickets.filter(
                 Q(asignado_a=usuario) |
                 Q(asignado_a__isnull=True)
             )
-    # ADMIN ve todos
 
-    # Filtro por estado (?ver=abiertos, todos, cerrados)
-    ver = request.GET.get('ver', 'abiertos')
+        # Para técnicos SIEMPRE solo abiertos, ignoramos ?ver
+        tickets = tickets.exclude(
+            estado__in=['RESUELTO', 'CERRADO', 'CANCELADO']
+        )
+        ver = 'abiertos'  # para marcar pestaña en plantilla si usas tabs
 
-    if ver == 'abiertos':
-        tickets = tickets.exclude(estado__in=['RESUELTO', 'CERRADO', 'CANCELADO'])
-    elif ver == 'cerrados':
-        tickets = tickets.filter(estado__in=['RESUELTO', 'CERRADO', 'CANCELADO'])
-    # ver == 'todos' → sin filtro extra
+    else:
+        # ADMIN normal
+        if ver == 'abiertos':
+            tickets = tickets.exclude(
+                estado__in=['RESUELTO', 'CERRADO', 'CANCELADO']
+            )
+        elif ver == 'cerrados':
+            tickets = tickets.filter(
+                estado__in=['RESUELTO', 'CERRADO', 'CANCELADO']
+            )
+        # ver == 'todos' => sin filtro extra
 
     tickets = tickets.order_by('-fecha_creacion')
 
