@@ -49,3 +49,9 @@ Thumbs.db
 mjk-tickets-firebase-adminsdk-fbsvc-09cf900112.json
 config/firebase_admin_key.json
 config/*.json
+#sqlite
+*.sqlite3
+*.sqlite3.*
+*_backup_*.sqlite3
+*tickets_prod*.sqlite3*
+
