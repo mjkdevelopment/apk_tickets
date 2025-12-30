@@ -2,91 +2,176 @@
 {% block title %}Reportes{% endblock %}
 
 {% block content %}
-<h2>Reportes generales</h2>
-<p class="text-muted">
-    Período de reincidencias: desde {{ inicio_mes|date:"d/m/Y" }} hasta {{ hoy|date:"d/m/Y" }}.
+<h2 class="mb-1">Reportes</h2>
+<p class="text-muted mb-4">
+    Ventana de análisis: <strong>{{ desde|date:"d/m/Y" }}</strong> → <strong>{{ hoy|date:"d/m/Y" }}</strong>
 </p>
 
-<div class="row g-3">
-    <!-- Tarjetas de totales por estado -->
-    <div class="col-md-4">
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
         <div class="card shadow-sm">
-            <div class="card-header">
-                Tickets por estado
-            </div>
             <div class="card-body">
-                <ul class="list-group list-group-flush">
-                    {% for e in tickets_por_estado %}
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>{{ e.nombre }}</span>
-                            <span class="badge bg-primary rounded-pill">{{ e.total }}</span>
-                        </li>
-                    {% endfor %}
-                </ul>
+                <div class="text-muted small">Tickets abiertos (ahora)</div>
+                <div class="fs-3 fw-bold">{{ abiertos_total }}</div>
             </div>
         </div>
     </div>
-
-    <!-- Reincidencias por local -->
-    <div class="col-md-4">
-        <div class="card shadow-sm">
-            <div class="card-header">
-                Locales con más averías (mes actual)
-            </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-danger">
             <div class="card-body">
-                {% if reincidencias_locales %}
-                    <table class="table table-sm">
-                        <thead>
+                <div class="text-muted small">Abiertos vencidos (SLA)</div>
+                <div class="fs-3 fw-bold text-danger">{{ abiertos_vencidos }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">Prom. solución (3 meses)</div>
+                <div class="fs-4 fw-bold">{{ avg_solucion_global }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">Cumplimiento SLA (3 meses)</div>
+                <div class="fs-4 fw-bold">{{ pct_on_time }}%</div>
+                <div class="text-muted small">({{ total_cerrados }} tickets)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SLA por banca -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <strong>SLA por banca</strong>
+            <span class="text-muted small">(últimos 3 meses)</span>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if sla_por_local %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Banca</th>
+                            <th class="text-end">Cerrados</th>
+                            <th class="text-end">Cumplen SLA</th>
+                            <th class="text-end">% SLA</th>
+                            <th class="text-end">Prom. respuesta</th>
+                            <th class="text-end">Prom. solución</th>
+                            <th class="text-end">Abiertos</th>
+                            <th class="text-end">Abiertos vencidos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in sla_por_local %}
                             <tr>
-                                <th>Local</th>
-                                <th class="text-end">Tickets</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for l in reincidencias_locales %}
-                            <tr>
-                                <td>{{ l.codigo }} - {{ l.nombre }}</td>
-                                <td class="text-end">{{ l.total_tickets }}</td>
+                                <td>
+                                    <div class="fw-semibold">{{ r.codigo }}</div>
+                                    <div class="text-muted small">{{ r.nombre }}</div>
+                                </td>
+                                <td class="text-end">{{ r.total }}</td>
+                                <td class="text-end">{{ r.on_time }}</td>
+                                <td class="text-end">
+                                    <span class="badge {% if r.pct_on_time >= 90 %}bg-success{% elif r.pct_on_time >= 75 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                        {{ r.pct_on_time }}%
+                                    </span>
+                                </td>
+                                <td class="text-end">{{ r.avg_respuesta }}</td>
+                                <td class="text-end">{{ r.avg_solucion }}</td>
+                                <td class="text-end">{{ r.abiertos }}</td>
+                                <td class="text-end">
+                                    {% if r.abiertos_vencidos %}
+                                        <span class="badge bg-danger">{{ r.abiertos_vencidos }}</span>
+                                    {% else %}
+                                        <span class="text-muted">0</span>
+                                    {% endif %}
+                                </td>
                             </tr>
                         {% endfor %}
-                        </tbody>
-                    </table>
-                {% else %}
-                    <p class="text-muted mb-0">Aún no hay tickets este mes.</p>
-                {% endif %}
+                    </tbody>
+                </table>
             </div>
-        </div>
+        {% else %}
+            <p class="text-muted mb-0">No hay datos de cierre en el período.</p>
+        {% endif %}
     </div>
+</div>
 
-    <!-- Técnicos con más tickets cerrados -->
-    <div class="col-md-4">
-        <div class="card shadow-sm">
-            <div class="card-header">
-                Técnicos con más tickets cerrados (histórico)
-            </div>
-            <div class="card-body">
-                {% if tecnicos_top %}
-                    <table class="table table-sm">
-                        <thead>
+<!-- Reincidencias -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <strong>Reincidencias</strong>
+        <span class="text-muted small">(mismo problema por banca, últimos 3 meses)</span>
+    </div>
+    <div class="card-body">
+        {% if reincidencias %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Banca</th>
+                            <th>Categoría</th>
+                            <th class="text-end">Tickets</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in reincidencias %}
                             <tr>
-                                <th>Técnico</th>
-                                <th class="text-end">Cerrados</th>
+                                <td>
+                                    <div class="fw-semibold">{{ r.local__codigo }}</div>
+                                    <div class="text-muted small">{{ r.local__nombre }}</div>
+                                </td>
+                                <td>{{ r.categoria__nombre }}</td>
+                                <td class="text-end">
+                                    <span class="badge bg-secondary">{{ r.total }}</span>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">No hay reincidencias (>=2) en el período.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Top técnicos -->
+<div class="card shadow-sm">
+    <div class="card-header">
+        <strong>Técnicos con más tickets cerrados</strong>
+    </div>
+    <div class="card-body">
+        {% if tecnicos_top %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Técnico</th>
+                            <th class="text-end">Cerrados</th>
+                        </tr>
+                    </thead>
+                    <tbody>
                         {% for t in tecnicos_top %}
                             <tr>
-                                <td>{{ t.get_full_name|default:t.username }}</td>
+                                <td>
+                                    {{ t.asignado_a__first_name }} {{ t.asignado_a__last_name }}
+                                    <span class="text-muted small">({{ t.asignado_a__username }})</span>
+                                </td>
                                 <td class="text-end">{{ t.total_cerrados }}</td>
                             </tr>
                         {% endfor %}
-                        </tbody>
-                    </table>
-                {% else %}
-                    <p class="text-muted mb-0">Ningún técnico ha cerrado tickets todavía.</p>
-                {% endif %}
+                    </tbody>
+                </table>
             </div>
-        </div>
+        {% else %}
+            <p class="text-muted mb-0">Ningún técnico ha cerrado tickets todavía.</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

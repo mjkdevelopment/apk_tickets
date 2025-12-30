@@ -2,26 +2,105 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<h3 class="mb-4">Bienvenido, {{ user.first_name|default:user.username }}</h3>
+<h3 class="mb-1">Bienvenido, {{ user.first_name|default:user.username }}</h3>
+<p class="text-muted mb-4">Resumen de tickets abiertos y tiempo transcurrido.</p>
 
-<div class="row g-3">
+<div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="card shadow-sm">
             <div class="card-body">
-                <h5 class="card-title">Tickets</h5>
-                <p class="card-text">Aquí luego mostraremos estadísticas de tickets.</p>
-                <!-- Más adelante enlazamos a la lista de tickets -->
+                <div class="text-muted small">Tickets abiertos</div>
+                <div class="fs-3 fw-bold">{{ total_abiertos }}</div>
             </div>
         </div>
     </div>
-
+    <div class="col-md-4">
+        <div class="card shadow-sm border-danger">
+            <div class="card-body">
+                <div class="text-muted small">Vencidos (SLA)</div>
+                <div class="fs-3 fw-bold text-danger">{{ vencidos }}</div>
+            </div>
+        </div>
+    </div>
     <div class="col-md-4">
         <div class="card shadow-sm">
             <div class="card-body">
-                <h5 class="card-title">Locales</h5>
-                <p class="card-text">Veremos locales con más averías, etc.</p>
+                <div class="text-muted small">Por vencer (próximas 2h)</div>
+                <div class="fs-3 fw-bold">{{ por_vencer_2h }}</div>
             </div>
         </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Tickets abiertos</strong>
+        <a href="{% url 'tickets_lista' %}?ver=abiertos" class="btn btn-sm btn-outline-primary">Ver todos</a>
+    </div>
+    <div class="card-body">
+        {% if tickets_abiertos %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Local</th>
+                            <th>Categoría</th>
+                            <th>Estado</th>
+                            <th>Creado</th>
+                            <th>Abierto</th>
+                            <th>SLA</th>
+                            <th>Asignado</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for t in tickets_abiertos %}
+                        <tr>
+                            <td class="fw-semibold">{{ t.numero_ticket }}</td>
+                            <td>
+                                <div class="fw-semibold">{{ t.local.codigo }}</div>
+                                <div class="text-muted small">{{ t.local.nombre }}</div>
+                            </td>
+                            <td>{{ t.categoria.nombre }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ t.get_estado_display }}</span>
+                            </td>
+                            <td class="text-muted small">
+                                {{ t.fecha_creacion|date:"d/m/Y H:i" }}
+                            </td>
+                            <td>
+                                <span class="text-muted small">{{ t.fecha_creacion|timesince }}</span>
+                            </td>
+                            <td>
+                                {% if t.esta_vencido %}
+                                    <span class="badge bg-danger">Vencido</span>
+                                    <div class="text-muted small">hace {{ t.fecha_limite_sla|timesince }}</div>
+                                {% else %}
+                                    <span class="badge bg-{{ t.get_color_sla }}">En SLA</span>
+                                    <div class="text-muted small">faltan {{ t.fecha_limite_sla|timeuntil }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if t.asignado_a %}
+                                    {{ t.asignado_a.get_full_name|default:t.asignado_a.username }}
+                                {% else %}
+                                    <span class="text-muted">Sin asignar</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-sm btn-outline-secondary" href="{% url 'ticket_detalle' t.pk %}">
+                                    Ver
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">No tienes tickets abiertos ahora mismo.</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
