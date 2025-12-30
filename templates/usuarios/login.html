@@ -3,34 +3,34 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-4">
-        <div class="card shadow-sm">
-            <div class="card-header text-center">
-                <h5 class="mb-0">Iniciar sesión</h5>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    {{ form.non_field_errors }}
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-header text-center">
+        <h5 class="mb-0">Iniciar sesión</h5>
+      </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">{{ form.username.label }}</label>
-                        {{ form.username }}
-                        {{ form.username.errors }}
-                    </div>
+      <div class="card-body">
+        <form method="post" action="{% url 'login' %}">
+          {% csrf_token %}
 
-                    <div class="mb-3">
-                        <label class="form-label">{{ form.password.label }}</label>
-                        {{ form.password }}
-                        {{ form.password.errors }}
-                    </div>
+          {{ form.non_field_errors }}
 
-                    <button type="submit" class="btn btn-primary w-100">
-                        Entrar
-                    </button>
-                </form>
-            </div>
-        </div>
+          <div class="mb-3">
+            <label class="form-label">{{ form.username.label }}</label>
+            {{ form.username }}
+            {{ form.username.errors }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">{{ form.password.label }}</label>
+            {{ form.password }}
+            {{ form.password.errors }}
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">Entrar</button>
+        </form>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}
